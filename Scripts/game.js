@@ -388,7 +388,7 @@ function createScene(level)
 
 	//Setting the size of the background plane 
 	var bg_Width = fieldWidth*/*2.*/5,
-		bg_Height = fieldHeight*/*2.5*/99,
+		bg_Height = fieldHeight*/*2.*/5,
 		bg_Quality = res_independent(10.0);
 
 	new THREE.TextureLoader().load('Textures/sp4ce.jpeg', function spaceTextureLoaded (bg_map) {
