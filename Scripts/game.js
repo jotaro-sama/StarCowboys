@@ -24,13 +24,24 @@ class BulletWrapper
 		this.active = false;
 	}
 }
+//This one wraps the enemy
+class EnemyWrapper
+{
+	constructor(enemyMesh, enemyBBox, enemyBoxHelper)
+	{
+		this.enemyMesh = enemyMesh;
+		this.enemyBBox = enemyBBox;
+		this.enemyBoxHelper = enemyBoxHelper;
+	}
+}
 //Global variables
 
 //Resources are not instantiated here because
 //we create them each time we start a level
 
 //Game setting variables
-var level_set = false, already_started = false;
+var level_set = false, already_started = false, 
+	visibleBBoxes = true; //For testing 
 
 //Position values
 var myHeight = window.screen.availHeight;
@@ -50,16 +61,28 @@ var canvas, renderer, scene, camera, pointLight;
 var ship, cannon, rockets, l_rocket, r_rocket;
 //Ship position values
 var ship_dir_x = 0, max_ship_tilt = deg_to_rad(20), ship_speed = res_independent(1.5);
+//Ship bounding box
+var shipBBox, shipBoxHelper;
 //Cannon values
 var cannon_max_rotation = deg_to_rad(30), 
 	cannon_speed = 1; //degrees/frame
 //Bullets pool
 var bullet_pool = null,
+	bullet_pool_init = false,
+	bullet_array = null,
 	bullets_number = 6,
 	bullet_side = res_independent_float(3),
+	bullet_color = 0x000000,
 	bullet_speed = res_independent_float(4),
 	last_fire=0,
 	cooldown = 300;
+//Enemy values. Enemies are rotating blue diamonds (shutout to Eva)
+var enemy_side = res_independent_float(12),
+	enemies_array = null,
+	enemy_color = 0x035096,
+	enemy_rot_speed = 0.085,
+	enemy_down_speed = 0.5;//0.05;
+
 
 //Levels
 var lv1 = new Level(
@@ -135,7 +158,7 @@ function starting_values()
 	camera = null,
 	pointLight = null;
 	//3D objects
-	ship = null;
+	//ship = null;
 	cannon = null;
 	rockets = null;
 	l_rocket = null;
@@ -143,7 +166,7 @@ function starting_values()
 	//Ship position values
 	ship_dir_x = 0;
 
-	bullet_pool=null;
+	//bullet_pool=null;
 	//renderer.domElement.children = [];
 	if(already_started)
 		canvas.children[0].remove();
@@ -246,6 +269,7 @@ function playerShipMovement()
 		ship_dir_x = 0;
 	}
 	ship.position.x += res_independent_float(ship_dir_x);
+	shipBoxHelper.update();
 }
 function playerCannonMovement()
 {
@@ -261,6 +285,7 @@ function playerCannonMovement()
 			cannon.rotateZ(deg_to_rad(cannon_speed));
 	}
 }
+
 function bulletAnimManage()
 {
 	bullet_array.forEach(
@@ -281,6 +306,37 @@ function bulletAnimManage()
 				{
 					bull.bullet.translateY(bullet_speed);
 				}
+			}
+		}
+	);
+}
+function enemiesAnimManage()
+{
+	enemies_array.forEach(
+		function rotateAndMove(ramiel)
+		{
+			ramiel.enemyMesh.rotation.y += enemy_rot_speed;
+			ramiel.enemyMesh.position.y -= enemy_down_speed;
+			ramiel.enemyBoxHelper.update();
+		}
+	);
+}
+/*
+function enemiesHurtManage()
+{
+
+}*/
+function enemiesHitManage()
+{
+	enemies_array.forEach(
+		function hit(ramiel)
+		{
+			//console.log(ramiel.enemyBBox);
+
+			if(ramiel.enemyBBox.intersectsBox(shipBBox))
+			{
+				//Do stuff when the ship is hit
+				console.log("haha you got hit");
 			}
 		}
 	);
@@ -330,6 +386,8 @@ function draw()
 		playerCannonMovement();
 		bulletAnimManage();
 		fireBullet();
+		enemiesAnimManage();
+		enemiesHitManage();
 	}	
 	// loop call this function
 	requestAnimationFrame(draw);
@@ -458,22 +516,77 @@ function createScene(level)
 						);
 						ship.position.y +=2;
 
+						//Initialize ship bounding box
+						shipBoxHelper = new THREE.BoxHelper(ship, 0x00ff00);
+						shipBBox = new THREE.Box3();
+						shipBBox.setFromObject(shipBoxHelper);
+
+						//For testing
+						if(visibleBBoxes)
+							scene.add(shipBoxHelper);
+
 						//Ship size: fixed for now
 
 						//Initialize bullet pool
-						bullet_pool = new buckets.PriorityQueue({
-							compareFunction: function(a, b) { return a.timestamp - b.timestamp;}});
-						bullet_array = new Array(bullets_number);
-						for(var i = 0; i < bullets_number; i++)
+						if(!bullet_pool_init)
 						{
-							var new_bullet = new THREE.Mesh(
-								new THREE.CubeGeometry(bullet_side, bullet_side, bullet_side),
-								new THREE.MeshPhongMaterial({color: 0x000000})
-							);
-							new_bullet = new BulletWrapper(new_bullet, Date.now());
-							bullet_pool.add(new_bullet);
-							bullet_array[i] = new_bullet;
+							bullet_pool = new buckets.PriorityQueue({
+								compareFunction: function(a, b) { return a.timestamp - b.timestamp;}});
+							bullet_array = new Array(bullets_number);
+							for(var i = 0; i < bullets_number; i++)
+							{
+								var new_bullet = new THREE.Mesh(
+									new THREE.CubeGeometry(bullet_side, bullet_side, bullet_side),
+									new THREE.MeshPhongMaterial({color: bullet_color})
+								);
+								new_bullet = new BulletWrapper(new_bullet, Date.now());
+								bullet_pool.add(new_bullet);
+								bullet_array[i] = new_bullet;
+							}
 						}
+						else
+						{
+							while(bullet_pool.size() > 0)
+							{
+								bullet_pool.dequeue();
+							}
+
+							bullet_array.forEach(
+								function makeAvailable(current_bull) 
+								{
+									bullet_pool.enqueue(current_bull);
+									current_bull.active = false;
+								});
+						}
+
+						//We now need to set up all the enemies.
+						//Now I'm only creating one for testing collisions and putting him right into the action, later I'll have to invent some kind of pooling logic and a spawning mechanism to deal with the hordes.
+						enemies_array = new Array();
+
+						var enemesh = new THREE.Mesh(
+							new THREE.OctahedronGeometry(radius=enemy_side),
+							new THREE.MeshPhongMaterial({
+								color: enemy_color, 
+								//reflectivity: 100,	
+								specular: enemy_color,
+								shininess: 100,})
+						);
+						var eneBoxHelper = new THREE.BoxHelper(enemesh, 0x00ff00);
+						//eneBBox.geometry.computeBoundingBox();
+
+						var eneBBox = new THREE.Box3();
+						eneBBox.setFromObject(eneBoxHelper);
+
+						var enemy = new EnemyWrapper(enemesh, eneBBox, eneBoxHelper);
+						enemies_array.push(enemy);
+
+						scene.add(enemy.enemyMesh);
+						scene.add(enemy.enemyBoxHelper);
+
+						enemy.enemyMesh.position.z = ship.position.z;
+						enemy.enemyMesh.position.y = fieldHeight/2 - 35;
+
+						enemy.enemyBoxHelper.update();
 
 						level_set = true;
 						if(!already_started)
