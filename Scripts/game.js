@@ -81,7 +81,7 @@ var enemy_side = res_independent_float(12),
 	enemies_array = null,
 	enemy_color = 0x035096,
 	enemy_rot_speed = 0.085,
-	enemy_down_speed = 0.5;//0.05;
+	enemy_down_speed = 0.6;//0.05;
 
 
 //Levels
@@ -318,6 +318,7 @@ function enemiesAnimManage()
 			ramiel.enemyMesh.rotation.y += enemy_rot_speed;
 			ramiel.enemyMesh.position.y -= enemy_down_speed;
 			ramiel.enemyBoxHelper.update();
+			ramiel.enemyBBox.setFromObject(ramiel.enemyBoxHelper);
 		}
 	);
 }
@@ -331,12 +332,16 @@ function enemiesHitManage()
 	enemies_array.forEach(
 		function hit(ramiel)
 		{
-			//console.log(ramiel.enemyBBox);
+			console.log(ramiel.enemyBBox.getCenter());
 
 			if(ramiel.enemyBBox.intersectsBox(shipBBox))
 			{
 				//Do stuff when the ship is hit
 				console.log("haha you got hit");
+			}
+			else
+			{
+				console.log("meh u not hit");
 			}
 		}
 	);
@@ -377,7 +382,7 @@ function draw()
 {	
 	if(level_set)
 	{
-		// draw the scene
+		//Draw the scene
 		renderer.render(scene, camera);
 
 		//Make changes
@@ -389,7 +394,7 @@ function draw()
 		enemiesAnimManage();
 		enemiesHitManage();
 	}	
-	// loop call this function
+	//Loop call this function
 	requestAnimationFrame(draw);
 }
 
@@ -526,6 +531,8 @@ function createScene(level)
 							scene.add(shipBoxHelper);
 
 						//Ship size: fixed for now
+
+						shipBoxHelper.update();
 
 						//Initialize bullet pool
 						if(!bullet_pool_init)
