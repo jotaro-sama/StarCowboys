@@ -47,6 +47,10 @@ var level_set = false, already_started = false,
 var myHeight = window.screen.availHeight;
 var myWidth = window.screen.availWidth;
 
+console.log(myHeight);
+//var WIDTH = res_independent_vert_float(800), 
+//	HEIGHT = res_independent_vert_float(540);
+
 var WIDTH = res_independent_float(800), 
 	HEIGHT = res_independent_float(540);
 
@@ -204,7 +208,8 @@ function res_independent(value)
 //Not used
 function res_independent_vert(value)
 {
-	return Math.floor((value/738.0)*myHeight);
+	//return Math.floor((value/738.0)*myHeight);
+	return Math.floor((value/678.0)*myHeight);
 }
 function res_independent_float(value)
 {
@@ -212,7 +217,8 @@ function res_independent_float(value)
 }
 function res_independent_vert_float(value)
 {
-	return (value/738.0)*myHeight;
+	//return (value/738.0)*myHeight;
+	return (value/678.0)*myHeight;
 }
 function deg_to_rad(angle)
 {
@@ -305,7 +311,7 @@ function bulletAnimManage()
 					scene.remove(bull.bullet);
 					bull.active = false;
 					bullet_pool.add(bull);
-					console.log('Bullet destroyed');
+					//console.log('Bullet destroyed');
 				}
 				else
 				{
@@ -337,7 +343,7 @@ function enemiesHitManage()
 	enemies_array.forEach(
 		function hit(ramiel)
 		{
-			console.log(ramiel.enemyBBox.getCenter());
+			//console.log(ramiel.enemyBBox.getCenter());
 
 			if(ramiel.enemyBBox.intersectsBox(shipBBox))
 			{
@@ -346,7 +352,7 @@ function enemiesHitManage()
 			}
 			else
 			{
-				console.log("meh u not hit");
+				//console.log("meh u not hit");
 			}
 		}
 	);
@@ -360,7 +366,7 @@ function fireBullet()
 		last_fire = now;
 		if(bullet_pool.size() > 0)
 		{
-			console.log('Shoot!');
+			//console.log('Shoot!');
 			var bull = bullet_pool.dequeue();
 			bull.active = true;
 			bull.bullet.position.set(ship.position.x - 15*cannon.rotation.z - 2, ship.position.y + 1.7*ship.scale.y, ship.position.z - 12);
@@ -460,7 +466,7 @@ function createScene(level)
 		bg_Quality = 10.0;
 
 	new THREE.TextureLoader().load('Textures/sp4ce.jpeg', function spaceTextureLoaded (bg_map) {
-		console.log('Inside spaceTextureLoaded');
+		//console.log('Inside spaceTextureLoaded');
 		bg_map.wrapS = THREE.RepeatWrapping;
 		bg_map.wrapT = THREE.RepeatWrapping;
 		bg_map.repeat.set( 1, 1 );
@@ -481,11 +487,11 @@ function createScene(level)
 		
 		//Place the spaceship
 		var m_loader = new THREE.OBJLoader();
-		console.log('Before the actual model loading');
+		//console.log('Before the actual model loading');
 		m_loader.load('Models/spaceship.obj', function loadedShipModel(ship_object) {
-			console.log('Inside loadedShipModel');
+			//console.log('Inside loadedShipModel');
 			new THREE.TextureLoader().load('Textures/ship_body_texture.png', function loadedShipTexture(ship_body_texture) {
-				console.log('Inside loadedShipTexture');
+				//console.log('Inside loadedShipTexture');
 				var ship_body_material = new THREE.MeshPhongMaterial({
 					map : ship_body_texture,
 				});
@@ -609,7 +615,7 @@ function createScene(level)
 			});
 		});
 	});
-	console.log('End of CreateScene!');
+	//console.log('End of CreateScene!');
 }
 
 function setupLevel(level)
