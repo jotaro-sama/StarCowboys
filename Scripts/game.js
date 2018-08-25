@@ -48,11 +48,11 @@ var myHeight = window.screen.availHeight;
 var myWidth = window.screen.availWidth;
 
 console.log(myHeight);
-//var WIDTH = res_independent_vert_float(800), 
-//	HEIGHT = res_independent_vert_float(540);
+var WIDTH = res_independent_vert_float(800), 
+	HEIGHT = res_independent_vert_float(540);
 
-var WIDTH = res_independent_float(800), 
-	HEIGHT = res_independent_float(540);
+//var WIDTH = res_independent_float(800), 
+//	HEIGHT = res_independent_float(540);
 
 /*var fieldWidth = res_independent_float(Math.floor(0.5 * WIDTH)),
 	fieldHeight = res_independent_vert_float(Math.floor(0.41 * HEIGHT)),
