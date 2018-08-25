@@ -513,7 +513,7 @@ function createScene(level)
 										
 						scene.add(ship);
 						ship.rotation.set(0, 0, 0);
-						ship.position.set(0, -fieldHeight/2 + 35, playersPlane);
+						ship.position.set(0, -fieldHeight/2 + res_independent_vert_float(35), playersPlane);
 						//ship.position.set(0, 0, playersPlane);
 						
 						ship.scale.set(
