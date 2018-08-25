@@ -55,8 +55,8 @@ var WIDTH = res_independent(800),
 	playersPlane = res_independent_vert_float(150.0),
 	bg_plane = res_independent_float(-200.0);*/
 
-var fieldWidth = res_independent_float(Math.floor(0.5 * WIDTH)),
-	fieldHeight = res_independent_vert_float(Math.floor(0.41 * HEIGHT)),
+var fieldWidth = 0.5 * WIDTH,
+	fieldHeight = 0.41 * HEIGHT,
 	playersPlane = 150.0,
 	bg_plane = -200.0;
 
@@ -65,7 +65,7 @@ var canvas, renderer, scene, camera, pointLight;
 //3D objects
 var ship, cannon, rockets, l_rocket, r_rocket;
 //Ship position values
-var ship_dir_x = 0, max_ship_tilt = deg_to_rad(20), ship_speed = res_independent(1.5);
+var ship_dir_x = 0, max_ship_tilt = deg_to_rad(20), ship_speed = 1.5;
 //Ship bounding box
 var shipBBox, shipBoxHelper;
 //Cannon values
@@ -76,13 +76,13 @@ var bullet_pool = null,
 	bullet_pool_init = false,
 	bullet_array = null,
 	bullets_number = 6,
-	bullet_side = res_independent_float(3),
+	bullet_side = 3,
 	bullet_color = 0x000000,
-	bullet_speed = res_independent_vert_float(4),
+	bullet_speed = 4,
 	last_fire=0,
 	cooldown = 300;
 //Enemy values. Enemies are rotating blue diamonds (shoutout to Eva)
-var enemy_side = res_independent_float(12),
+var enemy_side = 12,
 	enemies_array = null,
 	enemy_color = 0x035096,
 	enemy_rot_speed = 0.085,
@@ -238,7 +238,7 @@ function playerShipMovement()
 	if (Key.isDown(Key.A))		
 	{
 		//Check if ship is on the edge
-		if (ship.position.x > 0 - fieldWidth * res_independent_float(0.27))
+		if (ship.position.x > 0 - fieldWidth * 0.27)
 		{	
 			normalize_rot_Y(ship);
 			ship_dir_x = - ship_speed;
@@ -254,7 +254,7 @@ function playerShipMovement()
 	//Move right
 	else if (Key.isDown(Key.D))
 	{
-		if (ship.position.x < fieldWidth * res_independent_float(0.27))
+		if (ship.position.x < fieldWidth * 0.27)
 		{
 			normalize_rot_Y(ship);
 			ship_dir_x = ship_speed;
@@ -273,7 +273,7 @@ function playerShipMovement()
 		//Don't move the ship
 		ship_dir_x = 0;
 	}
-	ship.position.x += res_independent_float(ship_dir_x);
+	ship.position.x += ship_dir_x;
 	shipBoxHelper.update();
 }
 function playerCannonMovement()
@@ -436,7 +436,7 @@ function createScene(level)
 	
 	//Setting up a default position for the camera
 	//Not doing this somehow messes up shadow rendering
-	camera.position.z = res_independent_float(320.0);
+	camera.position.z = 320;//res_independent_float(320.0);
 	camera.lookAt(scene.position);
 
 	//Start the renderer
@@ -447,9 +447,9 @@ function createScene(level)
 	pointLight.intensity = 0.9;
 	scene.add(pointLight);
 	pointLight.position.set(
-		res_independent_float(-50), 
-		res_independent_vert_float(50), 
-		res_independent_float(200)
+		-50, 
+		50, 
+		200
 	);
 
 	canvas.appendChild(renderer.domElement);
@@ -457,7 +457,7 @@ function createScene(level)
 	//Setting the size of the background plane 
 	var bg_Width = fieldWidth*/*2.*/9,
 		bg_Height = fieldHeight*/*2.*/9,
-		bg_Quality = res_independent(10.0);
+		bg_Quality = 10.0;
 
 	new THREE.TextureLoader().load('Textures/sp4ce.jpeg', function spaceTextureLoaded (bg_map) {
 		console.log('Inside spaceTextureLoaded');
@@ -518,13 +518,11 @@ function createScene(level)
 										
 						scene.add(ship);
 						ship.rotation.set(0, 0, 0);
-						ship.position.set(0, -fieldHeight/2 + res_independent_vert_float(35), playersPlane);
+						ship.position.set(0, -fieldHeight/2 + 35, playersPlane);
 						//ship.position.set(0, 0, playersPlane);
 						
 						ship.scale.set(
-							res_independent_float(9), 
-							res_independent_vert_float(9), 
-							res_independent_float(9)
+							9,9,9
 						);
 						ship.position.y +=2;
 
