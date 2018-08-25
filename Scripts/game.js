@@ -48,7 +48,7 @@ var myHeight = window.screen.availHeight;
 var myWidth = window.screen.availWidth;
 
 var WIDTH = res_independent(800), 
-	HEIGHT = res_independent_vert(560);
+	HEIGHT = res_independent(540);
 
 /*var fieldWidth = res_independent_float(Math.floor(0.5 * WIDTH)),
 	fieldHeight = res_independent_vert_float(Math.floor(0.41 * HEIGHT)),
@@ -518,7 +518,7 @@ function createScene(level)
 										
 						scene.add(ship);
 						ship.rotation.set(0, 0, 0);
-						ship.position.set(0, -fieldHeight/2 + 35, playersPlane);
+						ship.position.set(0, -fieldHeight/2 + 48, playersPlane);
 						//ship.position.set(0, 0, playersPlane);
 						
 						ship.scale.set(
