@@ -238,7 +238,7 @@ function playerShipMovement()
 	if (Key.isDown(Key.A))		
 	{
 		//Check if ship is on the edge
-		if (ship.position.x > 0 - fieldWidth * 0.27)
+		if (ship.position.x > 0 - fieldWidth * 0.24)
 		{	
 			normalize_rot_Y(ship);
 			ship_dir_x = - ship_speed;
@@ -254,7 +254,7 @@ function playerShipMovement()
 	//Move right
 	else if (Key.isDown(Key.D))
 	{
-		if (ship.position.x < fieldWidth * 0.27)
+		if (ship.position.x < fieldWidth * 0.24)
 		{
 			normalize_rot_Y(ship);
 			ship_dir_x = ship_speed;
