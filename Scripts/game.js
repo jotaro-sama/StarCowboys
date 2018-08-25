@@ -412,10 +412,10 @@ function createScene(level)
 		canvas.style.width = WIDTH.toString() + 'px';
 	}
 	//Camera attributes
-	var VIEW_ANGLE = res_independent_float(50.0), //maybe something here should be tweaked to vert
+	var VIEW_ANGLE = 50.0,//res_independent_float(50.0), //maybe something here should be tweaked to vert
 		ASPECT = WIDTH / HEIGHT,
-		NEAR = res_independent_float(0.1),
-		FAR = res_independent_float(10000.0);
+		NEAR = 0.1,//res_independent_float(0.1),
+		FAR = 10000.0;//res_independent_float(10000.0);
 
 	renderer = new THREE.WebGLRenderer();
 	camera = new THREE.PerspectiveCamera(
