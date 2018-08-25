@@ -52,7 +52,7 @@ var WIDTH = res_independent(800),
 
 var fieldWidth = res_independent_float(Math.floor(0.5 * WIDTH)),
 	fieldHeight = res_independent_vert_float(Math.floor(0.41 * HEIGHT)),
-	playersPlane = res_independent_float(150.0),
+	playersPlane = res_independent_vert_float(150.0),
 	bg_plane = res_independent_float(-200.0);
 
 //Basic Three.js stuff:
