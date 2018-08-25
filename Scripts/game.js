@@ -50,10 +50,15 @@ var myWidth = window.screen.availWidth;
 var WIDTH = res_independent(800), 
 	HEIGHT = res_independent_vert(560);
 
-var fieldWidth = res_independent_float(Math.floor(0.5 * WIDTH)),
+/*var fieldWidth = res_independent_float(Math.floor(0.5 * WIDTH)),
 	fieldHeight = res_independent_vert_float(Math.floor(0.41 * HEIGHT)),
 	playersPlane = res_independent_vert_float(150.0),
-	bg_plane = res_independent_float(-200.0);
+	bg_plane = res_independent_float(-200.0);*/
+
+var fieldWidth = 0.5 * WIDTH,
+	fieldHeight = 0.41 * HEIGHT,
+	playersPlane = 150.0,
+	bg_plane = -200.0;
 
 //Basic Three.js stuff:
 var canvas, renderer, scene, camera, pointLight;
