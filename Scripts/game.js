@@ -86,7 +86,7 @@ var enemy_side = 12,
 	enemies_array = null,
 	enemy_color = 0x035096,
 	enemy_rot_speed = 0.085,
-	enemy_down_speed = 0.6;//0.05;
+	enemy_down_speed = 0;//0.6;//0.05;
 
 
 //Levels
@@ -596,7 +596,7 @@ function createScene(level)
 						scene.add(enemy.enemyBoxHelper);
 
 						enemy.enemyMesh.position.z = ship.position.z;
-						enemy.enemyMesh.position.y = fieldHeight/2 - 35;
+						enemy.enemyMesh.position.y = fieldHeight/2 - 45;
 
 						enemy.enemyBoxHelper.update();
 
