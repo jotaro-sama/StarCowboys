@@ -48,7 +48,7 @@ var myHeight = window.screen.availHeight;
 var myWidth = window.screen.availWidth;
 
 var WIDTH = res_independent(800), 
-	HEIGHT = res_independent(480);
+	HEIGHT = res_independent_vert(480);
 
 var fieldWidth = Math.floor(0.5 * WIDTH),
 	fieldHeight = Math.floor(0.41 * HEIGHT),
@@ -73,10 +73,10 @@ var bullet_pool = null,
 	bullets_number = 6,
 	bullet_side = res_independent_float(3),
 	bullet_color = 0x000000,
-	bullet_speed = res_independent_float(4),
+	bullet_speed = res_independent_vert_float(4),
 	last_fire=0,
 	cooldown = 300;
-//Enemy values. Enemies are rotating blue diamonds (shutout to Eva)
+//Enemy values. Enemies are rotating blue diamonds (shoutout to Eva)
 var enemy_side = res_independent_float(12),
 	enemies_array = null,
 	enemy_color = 0x035096,
@@ -412,7 +412,7 @@ function createScene(level)
 		canvas.style.width = WIDTH.toString() + 'px';
 	}
 	//Camera attributes
-	var VIEW_ANGLE = res_independent_float(50.0),
+	var VIEW_ANGLE = res_independent_float(50.0), //maybe something here should be tweaked to vert
 		ASPECT = WIDTH / HEIGHT,
 		NEAR = res_independent_float(0.1),
 		FAR = res_independent_float(10000.0);
