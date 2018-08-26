@@ -44,8 +44,8 @@ var level_set = false, already_started = false,
 	visibleBBoxes = true; //For testing 
 
 //Position values
-var myHeight = window.screen.availHeight;
-var myWidth = window.screen.availWidth;
+var myHeight = window.innerHeight;
+var myWidth = window.innerWidth;
 
 console.log(myHeight);
 var WIDTH = res_independent_vert_float(800), 
