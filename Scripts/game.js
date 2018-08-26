@@ -39,7 +39,7 @@ class EnemyWrapper
 //Resources are not instantiated here because
 //we create them each time we start a level
 
-//Game setting variables
+//Game setup variables
 var level_set = false, already_started = false, 
 	visibleBBoxes = true; //For testing 
 
