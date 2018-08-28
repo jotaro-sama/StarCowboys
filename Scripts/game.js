@@ -34,8 +34,9 @@ class EnemyWrapper
 		this.enemyBoxHelper = enemyBoxHelper;
 	}
 }
-//Global variables
 
+
+//GLOBAL VARIABLES
 //Resources are not instantiated here because
 //we create them each time we start a level
 
@@ -47,25 +48,21 @@ var level_set = false, already_started = false,
 var myHeight = window.innerHeight;
 var myWidth = window.innerWidth;
 
-console.log(myHeight);
-var WIDTH = res_independent_vert_float(800), 
-	HEIGHT = res_independent_vert_float(540);
+var WIDTH = res_independent(800), 
+	HEIGHT = res_independent(540);
 
-//var WIDTH = res_independent_float(800), 
-//	HEIGHT = res_independent_float(540);
-
-/*var fieldWidth = res_independent_float(Math.floor(0.5 * WIDTH)),
-	fieldHeight = res_independent_vert_float(Math.floor(0.41 * HEIGHT)),
-	playersPlane = res_independent_vert_float(150.0),
-	bg_plane = res_independent_float(-200.0);*/
-
-var fieldWidth = 400,//0.5 * WIDTH,
-	fieldHeight = 221.4,//0.41 * HEIGHT,
+var fieldWidth = 400,
+	fieldHeight = 221.4,
 	playersPlane = 150.0,
 	bg_plane = -200.0;
 
 //Basic Three.js stuff:
 var canvas, renderer, scene, camera, pointLight;
+//Camera parameters
+var FOV = 50.0,
+	ASPECT = WIDTH / HEIGHT,
+	NEAR = 0.1,
+	FAR = 10000.0;
 //3D objects
 var ship, cannon, rockets, l_rocket, r_rocket;
 //Ship position values
@@ -91,7 +88,13 @@ var enemy_side = 12,
 	enemy_color = 0x035096,
 	enemy_rot_speed = 0.085,
 	enemy_down_speed = 0;//0.6;//0.05;
-
+//Enemies pool
+var enemies_pool = null,
+	enemies_pool_init = false,
+	enemies_array = null,
+	enemies_number = 6;
+//Current level
+var current_level = null;
 
 //Levels
 var lv1 = new Level(
@@ -162,21 +165,20 @@ function starting_values()
 {
 	level_set = false;
 	//Basic Three.js stuff:
-	//renderer = 
 	scene = null, 
 	camera = null,
 	pointLight = null;
 	//3D objects
-	//ship = null;
+	ship = null;
 	cannon = null;
 	rockets = null;
 	l_rocket = null;
 	r_rocket = null;
 	//Ship position values
 	ship_dir_x = 0;
+	bullet_pool = null;
+	enemies_pool = null;
 
-	//bullet_pool=null;
-	//renderer.domElement.children = [];
 	if(already_started)
 		canvas.children[0].remove();
 }
@@ -201,23 +203,21 @@ function normalize_rot_Y(object)
 			object.rotateY(deg_to_rad(0.5));
 	}
 }
+function count_enemies(level)
+{
+	var enemies = 0; 
+	level.row_masks.forEach(row => {
+		row.forEach(slot => {
+			if(slot) enemies +=1;
+		});
+	});
+	return enemies;
+}
+
 function res_independent(value)
 {
-	return Math.floor((value/1366.0)*myWidth);
-}
-//Not used
-function res_independent_vert(value)
-{
-	//return Math.floor((value/738.0)*myHeight);
-	return Math.floor((value/678.0)*myHeight);
-}
-function res_independent_float(value)
-{
-	return (value/1366.0)*myWidth;
-}
-function res_independent_vert_float(value)
-{
-	//return (value/738.0)*myHeight;
+	//Makes every screen (or scaled window) have the same experience 
+	//based on the window's height (so that 4:3 and 16:9 work the same).
 	return (value/678.0)*myHeight;
 }
 function deg_to_rad(angle)
@@ -225,17 +225,9 @@ function deg_to_rad(angle)
 	return angle * Math.PI/180;
 }
 
-//Unused for now, will function as a starting point later
 function setupMenu()
 {
-	// update the board with the loaded level name
 	document.getElementById('subtitle').innerHTML = 'Select a level';
-	
-	// set up the 3D stuff for the menu	
-	//createMenu();
-	
-	// and let's get cracking!
-	//draw();
 }
 
 function playerShipMovement()
@@ -243,7 +235,6 @@ function playerShipMovement()
 	//Move the ship left
 	if (Key.isDown(Key.A))		
 	{
-		//Check if ship is on the edge
 		if (ship.position.x > 0 - fieldWidth * 0.24)
 		{	
 			normalize_rot_Y(ship);
@@ -273,10 +264,10 @@ function playerShipMovement()
 				ship.rotateY(deg_to_rad(0.5));
 		}
 	}
+	//Don't move the ship
 	else
 	{
 		normalize_rot_Y(ship);
-		//Don't move the ship
 		ship_dir_x = 0;
 	}
 	ship.position.x += ship_dir_x;
@@ -311,7 +302,6 @@ function bulletAnimManage()
 					scene.remove(bull.bullet);
 					bull.active = false;
 					bullet_pool.add(bull);
-					//console.log('Bullet destroyed');
 				}
 				else
 				{
@@ -343,23 +333,16 @@ function enemiesHitManage()
 	enemies_array.forEach(
 		function hit(ramiel)
 		{
-			//console.log(ramiel.enemyBBox.getCenter());
-
 			if(ramiel.enemyBBox.intersectsBox(shipBBox))
 			{
 				//Do stuff when the ship is hit
 				console.log("haha you got hit");
-			}
-			else
-			{
-				//console.log("meh u not hit");
 			}
 		}
 	);
 }
 function fireBullet()
 {
-	//console.log('Firing...');
 	var now = Date.now();
 	if (Key.isDown(Key.UP_ARROW) && cooldown < now - last_fire)		
 	{
@@ -397,7 +380,6 @@ function draw()
 		renderer.render(scene, camera);
 
 		//Make changes
-		//ship.rotateZ(deg_to_rad(1));
 		playerShipMovement();
 		playerCannonMovement();
 		bulletAnimManage();
@@ -415,40 +397,31 @@ function createScene(level)
 	if(!already_started)
 	{
 		canvas = document.getElementById('gameCanvas');
-		//console.log('My Height is: ' + myHeight);
-		//console.log('My Width is: ' + myWidth);
 
 		//This one sets the size of the actual canvas (the portion of the web page where the 3D scene is displayed)
 		canvas.style.height = HEIGHT.toString() + 'px'; //Reminder that CSS parameters are string
 		canvas.style.width = WIDTH.toString() + 'px';
 	}
-	//Camera attributes
-	var VIEW_ANGLE = 50.0,//res_independent_float(50.0), //maybe something here should be tweaked to vert
-		ASPECT = WIDTH / HEIGHT,
-		NEAR = 0.1,//res_independent_float(0.1),
-		FAR = 10000.0;//res_independent_float(10000.0);
+	current_level = level;
 
-	renderer = new THREE.WebGLRenderer();
-	camera = new THREE.PerspectiveCamera(
-		VIEW_ANGLE,
-		ASPECT,
-		NEAR,
-		FAR);
+	renderer = new THREE.WebGLRenderer({antialias:true});
+	renderer.setSize(WIDTH, HEIGHT);
+	canvas.appendChild(renderer.domElement);
 
 	scene = new THREE.Scene();
-	scene.position.set(0, 0, 0);
-	//Add the camera to the scene
-	//scene.add(camera);
-	
-	//Setting up a default position for the camera
-	//Not doing this somehow messes up shadow rendering
-	camera.position.z = 320;//res_independent_float(320.0);
+
+	//Camera setup
+	camera = new THREE.PerspectiveCamera(
+		FOV,
+		ASPECT,
+		NEAR,
+		FAR);	
+	camera.position.z = 320;
 	camera.lookAt(scene.position);
+	scene.position.set(0, 0, 0);
+	scene.add(camera);
 
-	//Start the renderer
-	renderer.setSize(WIDTH, HEIGHT);
-
-	//Create a light, set its position, and add it to the scene.
+	//Lighting setup
 	pointLight = new THREE.DirectionalLight(0xffffff);
 	pointLight.intensity = 0.9;
 	scene.add(pointLight);
@@ -458,178 +431,178 @@ function createScene(level)
 		200
 	);
 
-	canvas.appendChild(renderer.domElement);
+	//Load the texture of the background plane
+	new THREE.TextureLoader().load('Textures/sp4ce.jpeg', spaceTextureLoaded);
+}
 
+function spaceTextureLoaded (bg_map) {	
 	//Setting the size of the background plane 
-	var bg_Width = fieldWidth*/*2.*/9,
-		bg_Height = fieldHeight*/*2.*/9,
+	var bg_Width = fieldWidth*4,
+		bg_Height = fieldHeight*4,
 		bg_Quality = 10.0;
+	
+	bg_map.wrapS = THREE.RepeatWrapping;
+	bg_map.wrapT = THREE.RepeatWrapping;
+	bg_map.repeat.set( 1, 1 );
 
-	new THREE.TextureLoader().load('Textures/sp4ce.jpeg', function spaceTextureLoaded (bg_map) {
-		//console.log('Inside spaceTextureLoaded');
-		bg_map.wrapS = THREE.RepeatWrapping;
-		bg_map.wrapT = THREE.RepeatWrapping;
-		bg_map.repeat.set( 1, 1 );
-		var bg_material = new THREE.MeshPhongMaterial( { map: bg_map, side: THREE.DoubleSide } );
+	var bg_material = new THREE.MeshPhongMaterial( { map: bg_map, side: THREE.FrontSide } );
 
-		// create the space background plane
-		var background = new THREE.Mesh(
-			new THREE.PlaneGeometry(
-				width = bg_Width,
-				height = bg_Height,
-				widthSegments = bg_Quality,
-				heightSegments = bg_Quality),
-			bg_material);
-		scene.add(background);
-		background.position.x = 0;
-		background.position.y = 0;
-		background.position.z = bg_plane;
-		
-		//Place the spaceship
-		var m_loader = new THREE.OBJLoader();
-		//console.log('Before the actual model loading');
-		m_loader.load('Models/spaceship.obj', function loadedShipModel(ship_object) {
-			//console.log('Inside loadedShipModel');
-			new THREE.TextureLoader().load('Textures/ship_body_texture.png', function loadedShipTexture(ship_body_texture) {
-				//console.log('Inside loadedShipTexture');
-				var ship_body_material = new THREE.MeshPhongMaterial({
-					map : ship_body_texture,
+	// create the space background plane
+	var background = new THREE.Mesh(
+		new THREE.PlaneGeometry(
+			width = bg_Width,
+			height = bg_Height,
+			widthSegments = bg_Quality,
+			heightSegments = bg_Quality),
+		bg_material);
+	scene.add(background);
+	background.position.x = 0;
+	background.position.y = 0;
+	background.position.z = bg_plane;
+	
+	//Place the spaceship
+	var m_loader = new THREE.OBJLoader();
+
+	m_loader.load('Models/spaceship.obj', loadedShipModel);
+}
+
+function loadedShipModel(ship_object) {
+	new THREE.TextureLoader().load('Textures/ship_body_texture.png', function loadedShipTexture(ship_body_texture) {
+		var ship_body_material = new THREE.MeshPhongMaterial({
+			map : ship_body_texture,
+		});
+
+		ship = ship_object;
+		var ship_body = ship.getObjectByName('ship_body_Cube');//.children[0];
+		ship_body.material = ship_body_material;
+
+		cannon =  ship.getObjectByName('Cannon_Cylinder.001', true);// ship.children[1];
+		new THREE.TextureLoader().load('Textures/cannon_texture.png', function cannonTextureLoaded(cannon_texture) {
+			cannon.material = new THREE.MeshPhongMaterial({
+				map : cannon_texture,
+			});
+			ship.add(cannon);
+			rockets = new THREE.Object3D();
+			
+			l_rocket = ship.getObjectByName('Left_rocket_Cone', true);
+			r_rocket = ship.getObjectByName('Right_rocket_Cone.001', true);
+
+			rockets.add(l_rocket);
+			rockets.add(r_rocket);
+			ship.add(rockets);
+			ship.receiveShadow = true;
+			new THREE.TextureLoader().load('Textures/rocket_texture.png', function rocketTextureLoaded(rocket_texture) {
+				var rocket_material = new THREE.MeshPhongMaterial({
+					map : rocket_texture,
 				});
+				r_rocket.material = rocket_material;
+				l_rocket.material = rocket_material;
+								
+				scene.add(ship);
+				ship.rotation.set(0, 0, 0);
+				ship.position.set(0, -fieldHeight/2 + 50, playersPlane);
+				ship.scale.set(9,9,9);
 
-				ship = ship_object;
-				var ship_body = ship.getObjectByName('ship_body_Cube');//.children[0];
-				ship_body.material = ship_body_material;
+				//Initialize ship bounding box
+				shipBoxHelper = new THREE.BoxHelper(ship, 0x00ff00);
+				shipBBox = new THREE.Box3();
+				shipBBox.setFromObject(shipBoxHelper);
 
-				cannon =  ship.getObjectByName('Cannon_Cylinder.001', true);// ship.children[1];
-				new THREE.TextureLoader().load('Textures/cannon_texture.png', function cannonTextureLoaded(cannon_texture) {
-					cannon.material = new THREE.MeshPhongMaterial({
-						map : cannon_texture,
-					});
-					ship.add(cannon);
-					rockets = new THREE.Object3D();
-					
-					l_rocket = ship.getObjectByName('Left_rocket_Cone', true);
-					r_rocket = ship.getObjectByName('Right_rocket_Cone.001', true);
+				//For testing
+				if(visibleBBoxes)
+					scene.add(shipBoxHelper);
 
-					rockets.add(l_rocket);
-					rockets.add(r_rocket);
-					ship.add(rockets);
-					ship.receiveShadow = true;
-					new THREE.TextureLoader().load('Textures/rocket_texture.png', function rocketTextureLoaded(rocket_texture) {
-						var rocket_material = new THREE.MeshPhongMaterial({
-							map : rocket_texture,
-						});
-						r_rocket.material = rocket_material;
-						l_rocket.material = rocket_material;
-										
-						scene.add(ship);
-						ship.rotation.set(0, 0, 0);
-						ship.position.set(0, -fieldHeight/2 + 48, playersPlane);
-						//ship.position.set(0, 0, playersPlane);
-						
-						ship.scale.set(
-							9,9,9
-						);
-						ship.position.y +=2;
+				shipBoxHelper.update();
 
-						//Initialize ship bounding box
-						shipBoxHelper = new THREE.BoxHelper(ship, 0x00ff00);
-						shipBBox = new THREE.Box3();
-						shipBBox.setFromObject(shipBoxHelper);
+				initializeBulletPool();
 
-						//For testing
-						if(visibleBBoxes)
-							scene.add(shipBoxHelper);
+				//We now need to set up all the enemies.
+				//Now I'm only creating one for testing collisions and putting him right into the action, later I'll have to invent some kind of pooling logic and a spawning mechanism to deal with the hordes.
+				enemies_number = count_enemies(current_level);
 
-						//Ship size: fixed for now
+				enemies_array = new Array();
 
-						shipBoxHelper.update();
+				var enemesh = new THREE.Mesh(
+					new THREE.OctahedronGeometry(radius=enemy_side),
+					new THREE.MeshPhongMaterial({
+						color: enemy_color, 
+						//reflectivity: 100,	
+						specular: enemy_color,
+						shininess: 100,})
+				);
+				var eneBoxHelper = new THREE.BoxHelper(enemesh, 0x00ff00);
+				//eneBBox.geometry.computeBoundingBox();
 
-						//Initialize bullet pool
-						if(!bullet_pool_init)
-						{
-							bullet_pool = new buckets.PriorityQueue({
-								compareFunction: function(a, b) { return a.timestamp - b.timestamp;}});
-							bullet_array = new Array(bullets_number);
-							for(var i = 0; i < bullets_number; i++)
-							{
-								var new_bullet = new THREE.Mesh(
-									new THREE.CubeGeometry(bullet_side, bullet_side, bullet_side),
-									new THREE.MeshPhongMaterial({color: bullet_color})
-								);
-								new_bullet = new BulletWrapper(new_bullet, Date.now());
-								bullet_pool.add(new_bullet);
-								bullet_array[i] = new_bullet;
-							}
-						}
-						else
-						{
-							while(bullet_pool.size() > 0)
-							{
-								bullet_pool.dequeue();
-							}
+				var eneBBox = new THREE.Box3();
+				eneBBox.setFromObject(eneBoxHelper);
 
-							bullet_array.forEach(
-								function makeAvailable(current_bull) 
-								{
-									bullet_pool.enqueue(current_bull);
-									current_bull.active = false;
-								});
-						}
+				var enemy = new EnemyWrapper(enemesh, eneBBox, eneBoxHelper);
+				enemies_array.push(enemy);
 
-						//We now need to set up all the enemies.
-						//Now I'm only creating one for testing collisions and putting him right into the action, later I'll have to invent some kind of pooling logic and a spawning mechanism to deal with the hordes.
-						enemies_array = new Array();
+				scene.add(enemy.enemyMesh);
+				scene.add(enemy.enemyBoxHelper);
 
-						var enemesh = new THREE.Mesh(
-							new THREE.OctahedronGeometry(radius=enemy_side),
-							new THREE.MeshPhongMaterial({
-								color: enemy_color, 
-								//reflectivity: 100,	
-								specular: enemy_color,
-								shininess: 100,})
-						);
-						var eneBoxHelper = new THREE.BoxHelper(enemesh, 0x00ff00);
-						//eneBBox.geometry.computeBoundingBox();
+				enemy.enemyMesh.position.z = ship.position.z;
+				enemy.enemyMesh.position.y = fieldHeight/2 - 45;
 
-						var eneBBox = new THREE.Box3();
-						eneBBox.setFromObject(eneBoxHelper);
+				enemy.enemyBoxHelper.update();
 
-						var enemy = new EnemyWrapper(enemesh, eneBBox, eneBoxHelper);
-						enemies_array.push(enemy);
-
-						scene.add(enemy.enemyMesh);
-						scene.add(enemy.enemyBoxHelper);
-
-						enemy.enemyMesh.position.z = ship.position.z;
-						enemy.enemyMesh.position.y = fieldHeight/2 - 45;
-
-						enemy.enemyBoxHelper.update();
-
-						level_set = true;
-						if(!already_started)
-							draw();
-						already_started = true;
-					});
-				});
+				level_set = true;
+				if(!already_started)
+					draw();
+				already_started = true;
 			});
 		});
 	});
-	//console.log('End of CreateScene!');
+}
+
+function initializeBulletPool()
+{
+	if(!bullet_pool_init)
+	{
+		bullet_pool = new buckets.PriorityQueue({
+			compareFunction: function(a, b) { return a.timestamp - b.timestamp;}});
+		bullet_array = new Array(bullets_number);
+		for(var i = 0; i < bullets_number; i++)
+		{
+			var new_bullet = new THREE.Mesh(
+				new THREE.CubeGeometry(bullet_side, bullet_side, bullet_side),
+				new THREE.MeshPhongMaterial({color: bullet_color})
+			);
+			new_bullet = new BulletWrapper(new_bullet, Date.now());
+			bullet_pool.add(new_bullet);
+			bullet_array[i] = new_bullet;
+		}
+	}
+	else
+	{
+		while(bullet_pool.size() > 0)
+		{
+			bullet_pool.dequeue();
+		}
+
+		bullet_array.forEach(
+			function makeAvailable(current_bull) 
+			{
+				bullet_pool.enqueue(current_bull);
+				current_bull.active = false;
+			});
+	}
 }
 
 function setupLevel(level)
 {
-	// update the board with the loaded level name
+	//Set the level name as title
 	document.getElementById('subtitle').innerHTML = level.name;
 	
 	//Set up the scene for the selected level
 	starting_values();
 	createScene(level);
 
-	//draw will get called inside createScene
+	//draw() will get called inside createScene
 }
 $(document).ready(
 	function() {
 		setupMenu();
-	});
+	}
+);
