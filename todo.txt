@@ -4,9 +4,5 @@ collisioni
 normal maps
 
 real:
-add bounding box to bullets
-implement enemies hit
-implement player hit
-implement game end
-show UI in all of this
-check if it screws up when changing level
+use arrays for active elements only (should speed up)
+set good ending for when all enemies are gone

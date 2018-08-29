@@ -46,7 +46,8 @@ class EnemyWrapper
 
 //Game setup variables
 var level_set = false, already_started = false, 
-	visibleBBoxes = true, end_game = false; //For testing 
+	visibleBBoxes = false, //For testing
+	end_game = false;
 
 //Grab the window values
 var myHeight = window.innerHeight;
@@ -130,10 +131,10 @@ var lv2 = new Level(
 	'Level 2', 
 	4, 
 	[
+		[true, false, false, false, false],
+		[false, true, false, false, false],
 		[false, false, true, false, false],
-		[false, true, true, false, false],
-		[false, true, true, false, false],
-		[false, false, true, true, false]
+		[false, false, false, true, false]
 	],
 	5);
 
@@ -207,7 +208,7 @@ function starting_values()
 		window.clearTimeout(controls_timeout);
 		window.clearTimeout(enemies_timeout);
 		end_message.style.display = 'none';
-		score.innerHTML = 'Score: ' + score.toString();
+		scoreboard.innerHTML = 'Score: ' + score.toString();
 	}
 	
 }
@@ -242,6 +243,14 @@ function count_enemies(level)
 	});
 	return enemies;
 }
+function count_active_enemies()
+{
+	var active_enemies = 0;
+	enemies_array.forEach(enem => {
+		if(enem.active)	++active_enemies;
+	});
+	return active_enemies;
+}
 
 function res_independent(value)
 {
@@ -264,7 +273,7 @@ function setupMenu()
 	controls_message = document.getElementById('controls');
 	controls_message.style.display = 'none';
 	end_message = document.getElementById('end');
-	end_message.style.display = "none";
+	end_message.style.display = 'none';
 }
 
 function playerShipMovement()
@@ -309,6 +318,7 @@ function playerShipMovement()
 	}
 	ship.position.x += ship_dir_x;
 	shipBoxHelper.update();
+	shipBBox.setFromObject(shipBoxHelper);
 }
 function playerCannonMovement()
 {
@@ -361,7 +371,7 @@ function enemiesAnimManage()
 		{
 			if(ramiel.active)
 			{
-				if(Math.abs(ramiel.enemyMesh.position.y) > fieldHeight*0.5)
+				if(ramiel.enemyMesh.position.y < 0 - fieldHeight*0.3)
 				{
 					scene.remove(ramiel.enemyMesh);
 					if(visibleBBoxes)
@@ -438,8 +448,8 @@ function fireBullet()
 			//console.log('Shoot!');
 			var bull = bullet_pool.dequeue();
 			bull.active = true;
-			bull.bullet.position.set(ship.position.x - 15*cannon.rotation.z - 2, ship.position.y + 1.7*ship.scale.y, ship.position.z - 12);
-			//bull.bullet.position.y += ship.scale.y/2;
+			bull.bullet.position.set(ship.position.x - 15*cannon.rotation.z - 2, ship.position.y + 1.7*ship.scale.y, ship.position.z);
+
 			bull.bullet.rotation.z = cannon.rotation.z;
 			scene.add(bull.bullet);
 			if(visibleBBoxes)
@@ -456,9 +466,12 @@ function enemiesManager()
 		enemies_wave_ready = false;
 		enemies_timeout = window.setTimeout(enemiesRechargeWave, enemies_wave_interval);
 	}
-	else
+	else if(enemies_current_wave == current_level.row_masks.length && !end_game)
 	{
-		//Show ending without death
+		if(count_active_enemies() == 0)
+		{
+			goodEnd();
+		}
 	}
 	enemiesAnimManage();
 	enemiesHitManage();
@@ -671,6 +684,17 @@ function endGame()
 	end_message.innerHTML = 'See you, star cowboy...';
 	end_message.style.display = 'inline';
 
+}
+function goodEnd()
+{
+	console.log('Inside good end');
+	end_game = true;
+	controls_message.style.display = 'none';
+	window.clearTimeout(controls_timeout);
+	window.clearTimeout(enemies_timeout);
+	end_message.innerHTML = 'You\'re gonna carry that weight...';
+	end_message.style.left = '24%';
+	end_message.style.display = 'inline';
 }
 
 function initializeBulletPool()
