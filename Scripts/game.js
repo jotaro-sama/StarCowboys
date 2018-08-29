@@ -17,9 +17,11 @@ class Level
 //This one wraps the bullet for insertion in the queue
 class BulletWrapper
 {
-	constructor(bullet, timestamp)
+	constructor(bullet, bulletBBox, bulletBoxHelper, timestamp)
 	{
 		this.bullet = bullet;
+		this.bulletBBox = bulletBBox;
+		this.bulletBoxHelper = bulletBoxHelper;
 		this.timestamp = timestamp;
 		this.active = false;
 	}
@@ -44,7 +46,7 @@ class EnemyWrapper
 
 //Game setup variables
 var level_set = false, already_started = false, 
-	visibleBBoxes = true; //For testing 
+	visibleBBoxes = true, end_game = false; //For testing 
 
 //Grab the window values
 var myHeight = window.innerHeight;
@@ -93,7 +95,7 @@ var bullet_pool = null,
 //Enemy values. Enemies are rotating blue diamonds (shoutout to Eva)
 var enemy_side = 12,
 	enemies_array = null,
-	enemy_color = 0x035096,
+	enemy_color = 0x2C75FF,//0x035096,
 	enemy_rot_speed = 0.085,
 	enemy_down_speed = 0.6;//0.05;
 //Enemies pool
@@ -104,11 +106,13 @@ var enemies_pool = null,
 	enemies_current_wave = 0,
 	enemies_wave_interval = 3000,
 	enemies_wave_ready = true,
-	enemies_timeout = 0;
+	enemies_timeout = 0,
+	controls_timeout = 0;
 
 
 //Current level
-var current_level = null;
+var current_level = null,
+	score = 0;
 
 //Levels
 var lv1 = new Level(
@@ -194,11 +198,16 @@ function starting_values()
 	enemies_pool = null;
 	enemies_current_wave = 0;
 	enemies_wave_ready = true;
+	end_game = false;
+	score = 0;
 
 	if(already_started)
 	{
 		canvas.children[0].remove();
+		window.clearTimeout(controls_timeout);
 		window.clearTimeout(enemies_timeout);
+		end_message.style.display = 'none';
+		score.innerHTML = 'Score: ' + score.toString();
 	}
 	
 }
@@ -326,14 +335,20 @@ function bulletAnimManage()
 				if(Math.abs(bull.bullet.position.y) > fieldHeight*0.5 ||
 					Math.abs(bull.bullet.position.x) > fieldWidth*0.35)
 				{
-					bull.bullet.position
-					scene.remove(bull.bullet);
+					//bull.bullet.position ???
+					//scene.remove(bull.bullet);
+					//scene.remove(bull);
+					if(visibleBBoxes)
+						scene.remove(bull.bulletBoxHelper);
 					bull.active = false;
 					bullet_pool.add(bull);
 				}
 				else
 				{
 					bull.bullet.translateY(bullet_speed);
+					bull.bulletBoxHelper.update();
+					bull.bulletBBox.setFromObject(bull.bulletBoxHelper);
+
 				}
 			}
 		}
@@ -344,10 +359,25 @@ function enemiesAnimManage()
 	enemies_array.forEach(
 		function rotateAndMove(ramiel)
 		{
-			ramiel.enemyMesh.rotation.y += enemy_rot_speed;
-			ramiel.enemyMesh.position.y -= enemy_down_speed;
-			ramiel.enemyBoxHelper.update();
-			ramiel.enemyBBox.setFromObject(ramiel.enemyBoxHelper);
+			if(ramiel.active)
+			{
+				if(Math.abs(ramiel.enemyMesh.position.y) > fieldHeight*0.5)
+				{
+					scene.remove(ramiel.enemyMesh);
+					if(visibleBBoxes)
+						scene.remove(ramiel.enemyBoxHelper);
+					//scene.remove(ramiel);
+					ramiel.active = false;
+					enemies_pool.add(ramiel);
+				}
+				else
+				{
+					ramiel.enemyMesh.rotation.y += enemy_rot_speed;
+					ramiel.enemyMesh.position.y -= enemy_down_speed;
+					ramiel.enemyBoxHelper.update();
+					ramiel.enemyBBox.setFromObject(ramiel.enemyBoxHelper);
+				}
+			}
 		}
 	);
 }
@@ -360,7 +390,40 @@ function enemiesHitManage()
 			{
 				//Do stuff when the ship is hit
 				console.log("haha you got hit");
+				endGame();
 			}
+		}
+	);
+}
+function enemiesHurtManage()
+{
+	enemies_array.forEach(
+		function hurt(ramiel)
+		{
+			bullet_array.forEach(
+				function shot(bull)
+				{
+					if(ramiel.active && bull.active && ramiel.enemyBBox.intersectsBox(bull.bulletBBox))
+					{
+						console.log("yeah u hit an enemy!!!");
+						scoreboard.innerHTML = 'Score: ' + (++score).toString();
+						
+						scene.remove(bull.bullet);
+						if(visibleBBoxes)
+							scene.remove(bull.bulletBoxHelper);
+						//scene.remove(bull);
+						bull.active = false;
+						bullet_pool.add(bull);
+
+						scene.remove(ramiel.enemyMesh);
+						if(visibleBBoxes)
+							scene.remove(ramiel.enemyBoxHelper);
+						//scene.remove(ramiel);
+						ramiel.active = false;
+						enemies_pool.add(ramiel);
+					}					
+				}
+			);
 		}
 	);
 }
@@ -379,6 +442,9 @@ function fireBullet()
 			//bull.bullet.position.y += ship.scale.y/2;
 			bull.bullet.rotation.z = cannon.rotation.z;
 			scene.add(bull.bullet);
+			if(visibleBBoxes)
+				scene.add(bull.bulletBoxHelper);
+			bull.bulletBoxHelper.update();
 		}
 	}
 }
@@ -390,8 +456,13 @@ function enemiesManager()
 		enemies_wave_ready = false;
 		enemies_timeout = window.setTimeout(enemiesRechargeWave, enemies_wave_interval);
 	}
+	else
+	{
+		//Show ending without death
+	}
 	enemiesAnimManage();
 	enemiesHitManage();
+	enemiesHurtManage();
 }
 function enemiesSpawn(wave)
 {
@@ -403,7 +474,8 @@ function enemiesSpawn(wave)
 			var enem = enemies_pool.dequeue();
 			enem.active = true;
 			scene.add(enem.enemyMesh);
-			scene.add(enem.enemyBoxHelper);
+			if(visibleBBoxes)
+				scene.add(enem.enemyBoxHelper);
 
 			enem.enemyMesh.position.set(
 				0 - horizontalBound + enemy_offset * i, 
@@ -429,10 +501,13 @@ function draw()
 		renderer.render(scene, camera);
 
 		//Make changes
-		playerShipMovement();
-		playerCannonMovement();
+		if(!end_game)
+		{
+			playerShipMovement();
+			playerCannonMovement();
+			fireBullet();	
+		}
 		bulletAnimManage();
-		fireBullet();
 		enemiesManager();
 	}	
 	//Loop call this function
@@ -567,6 +642,11 @@ function loadedShipModel(ship_object) {
 				enemies_number = count_enemies(current_level);
 				initializeEnemiesPool();
 
+				//Set up UI
+				scoreboard.style.display = 'inline';
+				controls_message.style.display = 'inline';
+				controls_timeout = window.setTimeout(vanishControls, 2000);
+
 				level_set = true;
 				if(!already_started)
 					draw();
@@ -574,6 +654,23 @@ function loadedShipModel(ship_object) {
 			});
 		});
 	});
+}
+
+function vanishControls()
+{
+	controls_message.style.display = 'none';
+}
+
+function endGame()
+{
+	end_game = true;
+	scene.remove(ship);
+	controls_message.style.display = 'none';
+	window.clearTimeout(controls_timeout);
+	window.clearTimeout(enemies_timeout);
+	end_message.innerHTML = 'See you, star cowboy...';
+	end_message.style.display = 'inline';
+
 }
 
 function initializeBulletPool()
@@ -589,7 +686,11 @@ function initializeBulletPool()
 				new THREE.CubeGeometry(bullet_side, bullet_side, bullet_side),
 				new THREE.MeshPhongMaterial({color: bullet_color})
 			);
-			new_bullet = new BulletWrapper(new_bullet, Date.now());
+			var new_box_helper = new THREE.BoxHelper(new_bullet, 0x00ff00);
+			var new_bbox = new THREE.Box3();
+			new_bbox.setFromObject(new_box_helper);
+
+			new_bullet = new BulletWrapper(new_bullet, new_bbox, new_box_helper, Date.now());
 			bullet_pool.add(new_bullet);
 			bullet_array[i] = new_bullet;
 		}
@@ -656,8 +757,6 @@ function setupLevel(level)
 {
 	//Set the level name as title
 	document.getElementById('subtitle').innerHTML = level.name;
-	
-	
 
 	//Set up the scene for the selected level
 	starting_values();
