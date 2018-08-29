@@ -64,6 +64,8 @@ var horizontalBound = fieldWidth * 0.24,
 
 //Basic Three.js stuff:
 var canvas, renderer, scene, camera, pointLight;
+//UI elements
+var scoreboard, end_message, controls_message;
 //Camera parameters
 var FOV = 50.0,
 	ASPECT = WIDTH / HEIGHT,
@@ -246,6 +248,14 @@ function deg_to_rad(angle)
 function setupMenu()
 {
 	document.getElementById('subtitle').innerHTML = 'Select a level';
+
+	//Initially hide UI elements
+	scoreboard = document.getElementById('score');
+	scoreboard.style.display = 'none';
+	controls_message = document.getElementById('controls');
+	controls_message.style.display = 'none';
+	end_message = document.getElementById('end');
+	end_message.style.display = "none";
 }
 
 function playerShipMovement()
@@ -647,6 +657,8 @@ function setupLevel(level)
 	//Set the level name as title
 	document.getElementById('subtitle').innerHTML = level.name;
 	
+	
+
 	//Set up the scene for the selected level
 	starting_values();
 	createScene(level);

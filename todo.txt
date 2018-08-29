@@ -2,3 +2,11 @@ UI
 completare gioco
 collisioni
 normal maps
+
+real:
+add bounding box to bullets
+implement enemies hit
+implement player hit
+implement game end
+show UI in all of this
+check if it screws up when changing level

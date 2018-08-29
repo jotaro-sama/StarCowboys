@@ -30,6 +30,7 @@
 				align: center;
 			}
 			#scoreboard {
+				position: relative;
 				text-align: center;
 				/*font-family: Segoe UI, Helvetica, Ubuntu, sans-serif;*/
 			    font-family: 'Montserrat', sans-serif;
@@ -58,11 +59,31 @@
 				margin: auto;
 				text-align: center;
 			}
+			#wrapper {
+				display: inline-block;
+				position: relative;
+			}
 			#score {
 				position: absolute;
-				top:12%;
-				left:22%;
+				top:4%;
+				left:4%;
 				display: inline;
+				background-color: transparent;
+			}
+			#controls {
+				position: absolute;
+				bottom: 40%;
+				left: 12%;
+				display:inline;
+				background-color: transparent;
+			}
+			#end {
+				font-size: 150%;
+				font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+				position: absolute;
+				bottom: 60%;
+				left: 40%;
+				display:inline;
 				background-color: transparent;
 			}
 		</style>
@@ -79,8 +100,12 @@
 		<div id='scoreboard'>
 			<h1 id='title'> Star Cowboys </h1>
 			<h2 id='subtitle'>Kill wanted aliens to get the bounty on their heads!</h2>
-		<div id='gameCanvas'></div>
-		<div id="score">Score: 0</div>
+			<div id='wrapper'>
+				<div id='gameCanvas'></div>
+				<div id='score'>Score: 0</div>
+				<div id='controls'>Use A and D to move, left and right to rotate the cannon and up to shoot!</div>
+				<div id='end'>This is the end</div>
+			</div>
 		</div>
 		<br>
 		<div id="levelButtons">
