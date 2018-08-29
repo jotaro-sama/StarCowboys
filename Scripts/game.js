@@ -27,11 +27,13 @@ class BulletWrapper
 //This one wraps the enemy
 class EnemyWrapper
 {
-	constructor(enemyMesh, enemyBBox, enemyBoxHelper)
+	constructor(enemyMesh, enemyBBox, enemyBoxHelper, timestamp)
 	{
 		this.enemyMesh = enemyMesh;
 		this.enemyBBox = enemyBBox;
 		this.enemyBoxHelper = enemyBoxHelper;
+		this.timestamp = timestamp;
+		this.active = false;
 	}
 }
 
@@ -44,10 +46,11 @@ class EnemyWrapper
 var level_set = false, already_started = false, 
 	visibleBBoxes = true; //For testing 
 
-//Position values
+//Grab the window values
 var myHeight = window.innerHeight;
 var myWidth = window.innerWidth;
 
+//Canvas values
 var WIDTH = res_independent(800), 
 	HEIGHT = res_independent(540);
 
@@ -56,12 +59,15 @@ var fieldWidth = 400,
 	playersPlane = 150.0,
 	bg_plane = -200.0;
 
+var horizontalBound = fieldWidth * 0.24,
+	verticalBound = fieldHeight/2 - 45;
+
 //Basic Three.js stuff:
 var canvas, renderer, scene, camera, pointLight;
 //Camera parameters
 var FOV = 50.0,
 	ASPECT = WIDTH / HEIGHT,
-	NEAR = 0.1,
+	NEAR = 100,
 	FAR = 10000.0;
 //3D objects
 var ship, cannon, rockets, l_rocket, r_rocket;
@@ -87,12 +93,18 @@ var enemy_side = 12,
 	enemies_array = null,
 	enemy_color = 0x035096,
 	enemy_rot_speed = 0.085,
-	enemy_down_speed = 0;//0.6;//0.05;
+	enemy_down_speed = 0.6;//0.05;
 //Enemies pool
 var enemies_pool = null,
 	enemies_pool_init = false,
 	enemies_array = null,
-	enemies_number = 6;
+	enemies_number = 6,
+	enemies_current_wave = 0,
+	enemies_wave_interval = 3000,
+	enemies_wave_ready = true,
+	enemies_timeout = 0;
+
+
 //Current level
 var current_level = null;
 
@@ -123,7 +135,7 @@ var lv3 = new Level(
 	'Level 3', 
 	4, 
 	[
-		[false, false, true, false, false],
+		[true, true, true, true, true],
 		[false, true, true, false, false],
 		[false, true, true, false, false],
 		[false, false, true, true, false]
@@ -134,7 +146,7 @@ var lv4 = new Level(
 	'Level 4', 
 	4, 
 	[
-		[false, false, true, false, false],
+		[false, false, true, false, true],
 		[false, true, true, false, false],
 		[false, true, true, false, false],
 		[false, false, true, true, false]
@@ -145,7 +157,7 @@ var lv5 = new Level(
 	'Level 5', 
 	10, 
 	[
-		[false, false, 	true, false,	false, 	true, 	true],
+		[true, true, 	true, true,		true, 	true, 	true],
 		[false, true, 	true, false,	false, 	false, 	true],
 		[false, true, 	true, false,	false, 	false, 	true],
 		[false, false, 	true, true,		true, 	true, 	true],
@@ -178,9 +190,15 @@ function starting_values()
 	ship_dir_x = 0;
 	bullet_pool = null;
 	enemies_pool = null;
+	enemies_current_wave = 0;
+	enemies_wave_ready = true;
 
 	if(already_started)
+	{
 		canvas.children[0].remove();
+		window.clearTimeout(enemies_timeout);
+	}
+	
 }
 function normalize_rot_Y(object)
 {
@@ -235,7 +253,7 @@ function playerShipMovement()
 	//Move the ship left
 	if (Key.isDown(Key.A))		
 	{
-		if (ship.position.x > 0 - fieldWidth * 0.24)
+		if (ship.position.x > 0 - horizontalBound)
 		{	
 			normalize_rot_Y(ship);
 			ship_dir_x = - ship_speed;
@@ -251,7 +269,7 @@ function playerShipMovement()
 	//Move right
 	else if (Key.isDown(Key.D))
 	{
-		if (ship.position.x < fieldWidth * 0.24)
+		if (ship.position.x < horizontalBound)
 		{
 			normalize_rot_Y(ship);
 			ship_dir_x = ship_speed;
@@ -323,17 +341,12 @@ function enemiesAnimManage()
 		}
 	);
 }
-/*
-function enemiesHurtManage()
-{
-
-}*/
 function enemiesHitManage()
 {
 	enemies_array.forEach(
 		function hit(ramiel)
 		{
-			if(ramiel.enemyBBox.intersectsBox(shipBBox))
+			if(ramiel.active && ramiel.enemyBBox.intersectsBox(shipBBox))
 			{
 				//Do stuff when the ship is hit
 				console.log("haha you got hit");
@@ -359,17 +372,43 @@ function fireBullet()
 		}
 	}
 }
+function enemiesManager()
+{
+	if(enemies_wave_ready && enemies_current_wave < current_level.row_masks.length)
+	{
+		enemiesSpawn(enemies_current_wave++);
+		enemies_wave_ready = false;
+		enemies_timeout = window.setTimeout(enemiesRechargeWave, enemies_wave_interval);
+	}
+	enemiesAnimManage();
+	enemiesHitManage();
+}
+function enemiesSpawn(wave)
+{
+	var enemy_offset = horizontalBound*2/(current_level.row_size - 1);
+	for(var i = 0; i < current_level.row_masks[wave].length; i++)
+	{
+		if(current_level.row_masks[wave][i])
+		{
+			var enem = enemies_pool.dequeue();
+			enem.active = true;
+			scene.add(enem.enemyMesh);
+			scene.add(enem.enemyBoxHelper);
 
-//TODO:
-//bullet shooting (use priorityqueue with timestamp as a key)
-//if there is time:
-//purge and redo repo
-//get a clue about how to deal with enemies/player getting hit
-//set up enemy spawning/real level setup
-//text on screen with controls
-//memory cleanup when changing level (it seems to not unload 
-//the models for some reason)
-//not sure: ship moves slower on chrome than on firefox
+			enem.enemyMesh.position.set(
+				0 - horizontalBound + enemy_offset * i, 
+				verticalBound,
+				playersPlane
+			);
+
+			enem.enemyBoxHelper.update();
+		}
+	}
+}
+function enemiesRechargeWave()
+{
+	enemies_wave_ready = true;
+}
 
 //Put here everything that has to happen on every frame
 function draw()
@@ -384,8 +423,7 @@ function draw()
 		playerCannonMovement();
 		bulletAnimManage();
 		fireBullet();
-		enemiesAnimManage();
-		enemiesHitManage();
+		enemiesManager();
 	}	
 	//Loop call this function
 	requestAnimationFrame(draw);
@@ -432,7 +470,7 @@ function createScene(level)
 	);
 
 	//Load the texture of the background plane
-	new THREE.TextureLoader().load('Textures/sp4ce.jpeg', spaceTextureLoaded);
+	new THREE.TextureLoader().load('Textures/sp4ce-scaled.jpeg', spaceTextureLoaded);
 }
 
 function spaceTextureLoaded (bg_map) {	
@@ -516,36 +554,8 @@ function loadedShipModel(ship_object) {
 
 				initializeBulletPool();
 
-				//We now need to set up all the enemies.
-				//Now I'm only creating one for testing collisions and putting him right into the action, later I'll have to invent some kind of pooling logic and a spawning mechanism to deal with the hordes.
 				enemies_number = count_enemies(current_level);
-
-				enemies_array = new Array();
-
-				var enemesh = new THREE.Mesh(
-					new THREE.OctahedronGeometry(radius=enemy_side),
-					new THREE.MeshPhongMaterial({
-						color: enemy_color, 
-						//reflectivity: 100,	
-						specular: enemy_color,
-						shininess: 100,})
-				);
-				var eneBoxHelper = new THREE.BoxHelper(enemesh, 0x00ff00);
-				//eneBBox.geometry.computeBoundingBox();
-
-				var eneBBox = new THREE.Box3();
-				eneBBox.setFromObject(eneBoxHelper);
-
-				var enemy = new EnemyWrapper(enemesh, eneBBox, eneBoxHelper);
-				enemies_array.push(enemy);
-
-				scene.add(enemy.enemyMesh);
-				scene.add(enemy.enemyBoxHelper);
-
-				enemy.enemyMesh.position.z = ship.position.z;
-				enemy.enemyMesh.position.y = fieldHeight/2 - 45;
-
-				enemy.enemyBoxHelper.update();
+				initializeEnemiesPool();
 
 				level_set = true;
 				if(!already_started)
@@ -590,6 +600,48 @@ function initializeBulletPool()
 	}
 }
 
+function initializeEnemiesPool()
+{
+	if(!enemies_pool_init)
+	{
+		enemies_pool = new buckets.PriorityQueue({
+			compareFunction: function(a, b) { return a.timestamp - b.timestamp;}});
+		enemies_array = new Array(bullets_number);
+		for(var i = 0; i < enemies_number; i++)
+		{
+			var new_enemy = new THREE.Mesh(
+				new THREE.OctahedronGeometry(radius=enemy_side),
+				new THREE.MeshPhongMaterial({
+					color: enemy_color, 
+					//reflectivity: 100,	
+					specular: enemy_color,
+					shininess: 100,})
+			);
+			var new_box_helper = new THREE.BoxHelper(new_enemy, 0x00ff00);
+			var new_bbox = new THREE.Box3();
+			new_bbox.setFromObject(new_box_helper);
+
+			new_enemy = new EnemyWrapper(new_enemy, new_bbox, new_box_helper, Date.now());
+			enemies_pool.add(new_enemy);
+			enemies_array[i] = new_enemy;
+		}
+	}
+	else
+	{
+		while(enemies_pool.size() > 0)
+		{
+			enemies_pool.dequeue();
+		}
+
+		enemies_array.forEach(
+			function makeAvailable(current_enem) 
+			{
+				enemies_pool.enqueue(current_enem);
+				current_enem.active = false;
+			});
+	}
+}
+
 function setupLevel(level)
 {
 	//Set the level name as title
@@ -598,8 +650,6 @@ function setupLevel(level)
 	//Set up the scene for the selected level
 	starting_values();
 	createScene(level);
-
-	//draw() will get called inside createScene
 }
 $(document).ready(
 	function() {

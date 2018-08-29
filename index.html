@@ -58,6 +58,13 @@
 				margin: auto;
 				text-align: center;
 			}
+			#score {
+				position: absolute;
+				top:12%;
+				left:22%;
+				display: inline;
+				background-color: transparent;
+			}
 		</style>
 		<script src="Libs/three.min.js"></script>
 		<script src="Libs/jquery.js"></script>
@@ -69,10 +76,11 @@
 	</head>
 	<body>
 	<!--<body onload='init();'>-->
-			<div id='scoreboard'>
-				<h1 id='title'> Star Cowboys </h1>
-				<h2 id='subtitle'>Kill wanted aliens to get the bounty on their heads!</h2>
+		<div id='scoreboard'>
+			<h1 id='title'> Star Cowboys </h1>
+			<h2 id='subtitle'>Kill wanted aliens to get the bounty on their heads!</h2>
 		<div id='gameCanvas'></div>
+		<div id="score">Score: 0</div>
 		</div>
 		<br>
 		<div id="levelButtons">
