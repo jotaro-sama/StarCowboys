@@ -82,7 +82,7 @@ var ship_dir_x = 0, max_ship_tilt = deg_to_rad(20), ship_speed = 1.5;
 var shipBBox, shipBoxHelper;
 //Cannon values
 var cannon_max_rotation = deg_to_rad(30), 
-	cannon_speed = 1; //degrees/frame
+	cannon_speed = 2; //degrees/frame
 //Bullets pool
 var bullet_pool = null,
 	bullet_pool_init = false,
