@@ -1,8 +1,2 @@
-UI
-completare gioco
-collisioni
+final touches to gameplay settings
 normal maps
-
-real:
-use arrays for active elements only (should speed up)
-set good ending for when all enemies are gone
