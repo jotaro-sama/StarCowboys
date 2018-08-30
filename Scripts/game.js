@@ -537,6 +537,13 @@ function createScene(level)
 		//This one sets the size of the actual canvas (the portion of the web page where the 3D scene is displayed)
 		canvas.style.height = HEIGHT.toString() + 'px'; //Reminder that CSS parameters are string
 		canvas.style.width = WIDTH.toString() + 'px';
+
+		//Doing the same for the UI
+		controls_message.style.fontSize = res_independent(100).toString() + '%';
+		scoreboard.style.fontSize = res_independent(100).toString() + '%';
+		end_message.style.fontSize = res_independent(150).toString() + '%';
+
+		
 	}
 	current_level = level;
 
