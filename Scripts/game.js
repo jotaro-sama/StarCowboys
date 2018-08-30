@@ -667,7 +667,7 @@ function loadedShipModel(ship_object) {
 				controls_message.style.display = 'inline';
 				controls_timeout = window.setTimeout(vanishControls, 5500);
 
-				enemies_timeout = window.setTimeout(enemiesRechargeWave, enemies_wave_interval);
+				enemies_timeout = window.setTimeout(enemiesRechargeWave, 5000);
 				level_set = true;
 				if(!already_started)
 					draw();
