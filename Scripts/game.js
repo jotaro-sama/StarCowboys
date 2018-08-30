@@ -66,7 +66,7 @@ var horizontalBound = fieldWidth * 0.24,
 	verticalBound = fieldHeight/2 - 45;
 
 //Basic Three.js stuff:
-var canvas, renderer, scene, camera, pointLight;
+var canvas, renderer, scene, camera, pointLight, ambientLight;
 //UI elements
 var scoreboard, end_message, controls_message;
 //Camera parameters
@@ -75,7 +75,7 @@ var FOV = 50.0,
 	NEAR = 100,
 	FAR = 10000.0;
 //3D objects
-var ship, cannon, rockets, l_rocket, r_rocket;
+var ship, ship_body, cannon, rockets, l_rocket, r_rocket;
 //Ship position values
 var ship_dir_x = 0, max_ship_tilt = deg_to_rad(20), ship_speed = 1.5;
 //Ship bounding box
@@ -93,7 +93,7 @@ var bullet_pool = null,
 	bullet_speed = 4,
 	last_fire=0,
 	cooldown = 300;
-//Enemy values. Enemies are rotating blue diamonds (shoutout to Eva)
+//Enemy values 
 var enemy_side = 12,
 	enemies_array = null,
 	enemy_color = 0x2C75FF,//0x035096,
@@ -110,6 +110,18 @@ var enemies_pool = null,
 	enemies_timeout = 0,
 	controls_timeout = 0;
 
+//Models and textures
+var shipObject = null;
+var shipBodyColor = null;
+var shipBodyAO = null;
+var shipBodyMetal = null;
+var shipBodyNormal = null;
+var shipBodyMaterial = null;
+
+var shipDetailsColor = null;
+var shipDetailsAO = null;
+var shipDetailsMetal = null;
+var shipDetailsNormal = null;
 
 //Current level
 var current_level = null,
@@ -399,7 +411,6 @@ function enemiesHitManage()
 			if(ramiel.active && ramiel.enemyBBox.intersectsBox(shipBBox))
 			{
 				//Do stuff when the ship is hit
-				console.log("haha you got hit");
 				endGame();
 			}
 		}
@@ -415,20 +426,17 @@ function enemiesHurtManage()
 				{
 					if(ramiel.active && bull.active && ramiel.enemyBBox.intersectsBox(bull.bulletBBox))
 					{
-						console.log("yeah u hit an enemy!!!");
 						scoreboard.innerHTML = 'Score: ' + (++score).toString();
 						
 						scene.remove(bull.bullet);
 						if(visibleBBoxes)
 							scene.remove(bull.bulletBoxHelper);
-						//scene.remove(bull);
 						bull.active = false;
 						bullet_pool.add(bull);
 
 						scene.remove(ramiel.enemyMesh);
 						if(visibleBBoxes)
 							scene.remove(ramiel.enemyBoxHelper);
-						//scene.remove(ramiel);
 						ramiel.active = false;
 						enemies_pool.add(ramiel);
 					}					
@@ -445,7 +453,6 @@ function fireBullet()
 		last_fire = now;
 		if(bullet_pool.size() > 0)
 		{
-			//console.log('Shoot!');
 			var bull = bullet_pool.dequeue();
 			bull.active = true;
 			bull.bullet.position.set(ship.position.x - 15*cannon.rotation.z - 2, ship.position.y + 1.7*ship.scale.y, ship.position.z);
@@ -565,14 +572,18 @@ function createScene(level)
 	scene.add(camera);
 
 	//Lighting setup
-	pointLight = new THREE.DirectionalLight(0xffffff);
+	pointLight = new THREE.PointLight(0xffffff);
+	//pointLight.intensity = 0.7;
 	pointLight.intensity = 0.9;
 	scene.add(pointLight);
 	pointLight.position.set(
 		-50, 
-		50, 
-		200
+		60, 
+		playersPlane + 400,
 	);
+	ambientLight = new THREE.AmbientLight(0xffffff);
+	ambientLight.intensity = 0.1;
+	scene.add(ambientLight);
 
 	//Load the texture of the background plane
 	new THREE.TextureLoader().load('Textures/sp4ce-scaled.jpeg', spaceTextureLoaded);
@@ -590,91 +601,154 @@ function spaceTextureLoaded (bg_map) {
 
 	var bg_material = new THREE.MeshPhongMaterial( { map: bg_map, side: THREE.FrontSide } );
 
-	// create the space background plane
+	//Create the space background plane
 	var background = new THREE.Mesh(
 		new THREE.PlaneGeometry(
 			width = bg_Width,
 			height = bg_Height,
 			widthSegments = bg_Quality,
 			heightSegments = bg_Quality),
-		bg_material);
+			bg_material);
 	scene.add(background);
 	background.position.x = 0;
 	background.position.y = 0;
 	background.position.z = bg_plane;
 	
-	//Place the spaceship
+	//Load all the spaceship stuff
 	var m_loader = new THREE.OBJLoader();
 
-	m_loader.load('Models/spaceship.obj', loadedShipModel);
+	m_loader.load('Models/spaceship_def.obj', loadedShipModel);
 }
 
-function loadedShipModel(ship_object) {
-	new THREE.TextureLoader().load('Textures/ship_body_texture.png', function loadedShipTexture(ship_body_texture) {
-		var ship_body_material = new THREE.MeshPhongMaterial({
-			map : ship_body_texture,
-		});
+function loadedShipModel(loadedModel) {
+	shipObject = loadedModel;
+	new THREE.TextureLoader().load('Textures/metalgrid3-ogl/metalgrid3_basecolor.png', loadedShipColor);
+}
 
-		ship = ship_object;
-		var ship_body = ship.getObjectByName('ship_body_Cube');//.children[0];
-		ship_body.material = ship_body_material;
+function loadedShipColor(loadedText) {
+	shipBodyColor = loadedText;
+	new THREE.TextureLoader().load('Textures/metalgrid3-ogl/metalgrid3_AO.png', loadedShipAO);
+}
 
-		cannon =  ship.getObjectByName('Cannon_Cylinder.001', true);// ship.children[1];
-		new THREE.TextureLoader().load('Textures/cannon_texture.png', function cannonTextureLoaded(cannon_texture) {
-			cannon.material = new THREE.MeshPhongMaterial({
-				map : cannon_texture,
-			});
-			ship.add(cannon);
-			rockets = new THREE.Object3D();
-			
-			l_rocket = ship.getObjectByName('Left_rocket_Cone', true);
-			r_rocket = ship.getObjectByName('Right_rocket_Cone.001', true);
+function loadedShipAO(loadedText) {
+	shipBodyAO = loadedText;
+	new THREE.TextureLoader().load('Textures/metalgrid3-ogl/metalgrid3_metallic.png', loadedShipMetal);
+}
 
-			rockets.add(l_rocket);
-			rockets.add(r_rocket);
-			ship.add(rockets);
-			ship.receiveShadow = true;
-			new THREE.TextureLoader().load('Textures/rocket_texture.png', function rocketTextureLoaded(rocket_texture) {
-				var rocket_material = new THREE.MeshPhongMaterial({
-					map : rocket_texture,
-				});
-				r_rocket.material = rocket_material;
-				l_rocket.material = rocket_material;
-								
-				scene.add(ship);
-				ship.rotation.set(0, 0, 0);
-				ship.position.set(0, -fieldHeight/2 + 50, playersPlane);
-				ship.scale.set(9,9,9);
+function loadedShipMetal(loadedText) {
+	shipBodyMetal = loadedText;
+	new THREE.TextureLoader().load('Textures/metalgrid3-ogl/metalgrid3_normal-ogl.png', loadedShipNormal);
+}
 
-				//Initialize ship bounding box
-				shipBoxHelper = new THREE.BoxHelper(ship, 0x00ff00);
-				shipBBox = new THREE.Box3();
-				shipBBox.setFromObject(shipBoxHelper);
+function loadedShipNormal(loadedText) {
+	shipBodyNormal = loadedText;
 
-				//For testing
-				if(visibleBBoxes)
-					scene.add(shipBoxHelper);
+	ship = shipObject;
+	ship_body = ship.getObjectByName('ship_body_Cube');
 
-				shipBoxHelper.update();
-
-				initializeBulletPool();
-
-				enemies_number = count_enemies(current_level);
-				initializeEnemiesPool();
-
-				//Set up UI
-				scoreboard.style.display = 'inline';
-				controls_message.style.display = 'inline';
-				controls_timeout = window.setTimeout(vanishControls, 5500);
-
-				enemies_timeout = window.setTimeout(enemiesRechargeWave, 5000);
-				level_set = true;
-				if(!already_started)
-					draw();
-				already_started = true;
-			});
-		});
+	//2nd set of UVs required for AO
+	var geometry = ship_body.geometry;
+	geometry.addAttribute( 'uv2', new THREE.BufferAttribute( geometry.attributes.uv.array, 2 ) );
+	
+	shipBodyMaterial = new THREE.MeshStandardMaterial({
+		map : shipBodyColor,
+		metalnessMap : shipBodyMetal,
+		aoMap : shipBodyAO,
+		normalMap : shipBodyNormal
 	});
+	shipBodyMaterial.flatShading = false;
+
+	ship_body.material = shipBodyMaterial;
+
+	cannon = ship.getObjectByName('Cannon_Cylinder.001', true);
+	new THREE.TextureLoader().load('Textures/Titanium-Scuffed-Unity/Titanium-Scuffed_basecolor.png', detailsColorLoaded);
+}
+
+function detailsColorLoaded(loadedText) {
+	shipDetailsColor = loadedText;
+	new THREE.TextureLoader().load('Textures/Titanium-Scuffed-Unity/Titanium-Scuffed_metallic.png', detailsMetalLoaded);
+}
+
+/*function detailsAOLoaded(loadedText) {
+	shipDetailsAO = loadedText;
+	new THREE.TextureLoader().load('Textures/Titanium-Scuffed-Unity/metalgrid2_metallic.png', detailsMetalLoaded);
+}*/
+
+function detailsMetalLoaded(loadedText) {
+	shipDetailsMetal = loadedText;
+	new THREE.TextureLoader().load('Textures/Titanium-Scuffed-Unity/Titanium-Scuffed_normal.png', detailsNormalLoaded);
+}
+
+function detailsNormalLoaded(loadedText) {
+	shipDetailsNormal = loadedText;
+
+	var detailsMaterial = new THREE.MeshStandardMaterial({
+		map : shipDetailsColor,
+		metalnessMap : shipDetailsMetal,
+		//aoMap : shipDetailsAO,
+		normalMap : shipDetailsNormal
+	});
+
+	detailsMaterial.flatShading = false;
+
+	//2nd set of UVs required for AO
+	var geometry = cannon.geometry;
+	geometry.addAttribute( 'uv2', new THREE.BufferAttribute( geometry.attributes.uv.array, 2 ) );
+
+	cannon.material = detailsMaterial;
+	ship.add(cannon);
+	rockets = new THREE.Object3D();
+	
+	l_rocket = ship.getObjectByName('Left_rocket_Cone', true);
+	r_rocket = ship.getObjectByName('Right_rocket_Cone.001', true);
+
+	rockets.add(l_rocket);
+	rockets.add(r_rocket);
+	ship.add(rockets);
+	ship.receiveShadow = true;
+	
+	//2nd set of UVs required for AO
+	var geometry1 = r_rocket.geometry;
+	geometry1.addAttribute( 'uv2', new THREE.BufferAttribute( geometry.attributes.uv.array, 2 ) );
+
+	//2nd set of UVs required for AO
+	var geometry2 = l_rocket.geometry;
+	geometry2.addAttribute( 'uv2', new THREE.BufferAttribute( geometry.attributes.uv.array, 2 ) );
+
+	r_rocket.material = detailsMaterial;
+	l_rocket.material = detailsMaterial;
+					
+	scene.add(ship);
+	ship.rotation.set(0, 0, 0);
+	ship.position.set(0, -fieldHeight/2 + 50, playersPlane);
+	ship.scale.set(9,9,9);
+
+	//Initialize ship bounding box
+	shipBoxHelper = new THREE.BoxHelper(ship, 0x00ff00);
+	shipBBox = new THREE.Box3();
+	shipBBox.setFromObject(shipBoxHelper);
+
+	//For testing
+	if(visibleBBoxes)
+		scene.add(shipBoxHelper);
+
+	shipBoxHelper.update();
+
+	initializeBulletPool();
+
+	enemies_number = count_enemies(current_level);
+	initializeEnemiesPool();
+
+	//Set up UI
+	scoreboard.style.display = 'inline';
+	controls_message.style.display = 'inline';
+	controls_timeout = window.setTimeout(vanishControls, 5500);
+
+	enemies_timeout = window.setTimeout(enemiesRechargeWave, 5000);
+	level_set = true;
+	if(!already_started)
+		draw();
+	already_started = true;
 }
 
 function vanishControls()
@@ -695,7 +769,6 @@ function endGame()
 }
 function goodEnd()
 {
-	console.log('Inside good end');
 	end_game = true;
 	controls_message.style.display = 'none';
 	window.clearTimeout(controls_timeout);
