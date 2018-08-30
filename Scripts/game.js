@@ -106,7 +106,7 @@ var enemies_pool = null,
 	enemies_number = 6,
 	enemies_current_wave = 0,
 	enemies_wave_interval = 3000,
-	enemies_wave_ready = true,
+	enemies_wave_ready = false,
 	enemies_timeout = 0,
 	controls_timeout = 0;
 
@@ -198,7 +198,7 @@ function starting_values()
 	bullet_pool = null;
 	enemies_pool = null;
 	enemies_current_wave = 0;
-	enemies_wave_ready = true;
+	enemies_wave_ready = false;
 	end_game = false;
 	score = 0;
 
@@ -658,8 +658,9 @@ function loadedShipModel(ship_object) {
 				//Set up UI
 				scoreboard.style.display = 'inline';
 				controls_message.style.display = 'inline';
-				controls_timeout = window.setTimeout(vanishControls, 2000);
+				controls_timeout = window.setTimeout(vanishControls, 5500);
 
+				enemies_timeout = window.setTimeout(enemiesRechargeWave, enemies_wave_interval);
 				level_set = true;
 				if(!already_started)
 					draw();
