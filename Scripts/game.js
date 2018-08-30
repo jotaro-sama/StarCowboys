@@ -270,6 +270,14 @@ function res_independent(value)
 	//based on the window's height (so that 4:3 and 16:9 work the same).
 	return (value/678.0)*myHeight;
 }
+
+function res_independent_horiz(value)
+{
+	//Makes every screen (or scaled window) have the same experience 
+	//based on the window's height (so that 4:3 and 16:9 work the same).
+	return (value/1366.0)*myWidth;
+}
+
 function deg_to_rad(angle)
 {
 	return angle * Math.PI/180;
@@ -546,11 +554,13 @@ function createScene(level)
 		canvas.style.width = WIDTH.toString() + 'px';
 
 		//Doing the same for the UI
-		controls_message.style.fontSize = res_independent(100).toString() + '%';
-		scoreboard.style.fontSize = res_independent(100).toString() + '%';
-		end_message.style.fontSize = res_independent(150).toString() + '%';
+		controls_message.style.fontSize = res_independent_horiz(100).toString() + '%';
+		scoreboard.style.fontSize = res_independent_horiz(100).toString() + '%';
+		end_message.style.fontSize = res_independent_horiz(150).toString() + '%';
 
-		
+		//controls_message.style.left = res_independent_horiz(12).toString() + '%';
+		scoreboard.style.left = res_independent_horiz(4).toString() + '%';
+
 	}
 	current_level = level;
 
@@ -765,6 +775,7 @@ function endGame()
 	window.clearTimeout(enemies_timeout);
 	end_message.innerHTML = 'See you, star cowboy...';
 	end_message.style.display = 'inline';
+	//end_message.style.left = res_independent_horiz(33).toString() + '%';
 
 }
 function goodEnd()
@@ -774,7 +785,7 @@ function goodEnd()
 	window.clearTimeout(controls_timeout);
 	window.clearTimeout(enemies_timeout);
 	end_message.innerHTML = 'You\'re gonna carry that weight...';
-	end_message.style.left = '24%';
+	//end_message.style.left = res_independent_horiz(24).toString() + '%';
 	end_message.style.display = 'inline';
 }
 
