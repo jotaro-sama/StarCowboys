@@ -17,24 +17,22 @@ class Level
 //This one wraps the bullet for insertion in the queue
 class BulletWrapper
 {
-	constructor(bullet, bulletBBox, bulletBoxHelper, timestamp)
+	constructor(bullet, bulletBBox, bulletBoxHelper)
 	{
 		this.bullet = bullet;
 		this.bulletBBox = bulletBBox;
 		this.bulletBoxHelper = bulletBoxHelper;
-		this.timestamp = timestamp;
 		this.active = false;
 	}
 }
 //This one wraps the enemy
 class EnemyWrapper
 {
-	constructor(enemyMesh, enemyBBox, enemyBoxHelper, timestamp)
+	constructor(enemyMesh, enemyBBox, enemyBoxHelper)
 	{
 		this.enemyMesh = enemyMesh;
 		this.enemyBBox = enemyBBox;
 		this.enemyBoxHelper = enemyBoxHelper;
-		this.timestamp = timestamp;
 		this.active = false;
 	}
 }
@@ -365,9 +363,7 @@ function bulletAnimManage()
 				if(Math.abs(bull.bullet.position.y) > fieldHeight*0.5 ||
 					Math.abs(bull.bullet.position.x) > fieldWidth*0.35)
 				{
-					//bull.bullet.position ???
-					//scene.remove(bull.bullet);
-					//scene.remove(bull);
+					scene.remove(bull.bullet);
 					if(visibleBBoxes)
 						scene.remove(bull.bulletBoxHelper);
 					bull.active = false;
@@ -378,7 +374,6 @@ function bulletAnimManage()
 					bull.bullet.translateY(bullet_speed);
 					bull.bulletBoxHelper.update();
 					bull.bulletBBox.setFromObject(bull.bulletBoxHelper);
-
 				}
 			}
 		}
@@ -432,7 +427,7 @@ function enemiesHurtManage()
 			bullet_array.forEach(
 				function shot(bull)
 				{
-					if(ramiel.active && bull.active && ramiel.enemyBBox.intersectsBox(bull.bulletBBox))
+					if(bull.active && ramiel.active && ramiel.enemyBBox.intersectsBox(bull.bulletBBox))
 					{
 						scoreboard.innerHTML = 'Score: ' + (++score).toString();
 						
@@ -475,7 +470,7 @@ function fireBullet()
 }
 function enemiesManager()
 {
-	if(enemies_wave_ready && enemies_current_wave < current_level.row_masks.length)
+	if(enemies_wave_ready && enemies_current_wave < current_level.cycles)
 	{
 		enemiesSpawn(enemies_current_wave++);
 		enemies_wave_ready = false;
@@ -793,8 +788,7 @@ function initializeBulletPool()
 {
 	if(!bullet_pool_init)
 	{
-		bullet_pool = new buckets.PriorityQueue({
-			compareFunction: function(a, b) { return a.timestamp - b.timestamp;}});
+		bullet_pool = new buckets.Queue();
 		bullet_array = new Array(bullets_number);
 		for(var i = 0; i < bullets_number; i++)
 		{
@@ -806,7 +800,7 @@ function initializeBulletPool()
 			var new_bbox = new THREE.Box3();
 			new_bbox.setFromObject(new_box_helper);
 
-			new_bullet = new BulletWrapper(new_bullet, new_bbox, new_box_helper, Date.now());
+			new_bullet = new BulletWrapper(new_bullet, new_bbox, new_box_helper);
 			bullet_pool.add(new_bullet);
 			bullet_array[i] = new_bullet;
 		}
@@ -831,8 +825,7 @@ function initializeEnemiesPool()
 {
 	if(!enemies_pool_init)
 	{
-		enemies_pool = new buckets.PriorityQueue({
-			compareFunction: function(a, b) { return a.timestamp - b.timestamp;}});
+		enemies_pool = new buckets.Queue();
 		enemies_array = new Array(bullets_number);
 		for(var i = 0; i < enemies_number; i++)
 		{
@@ -848,7 +841,7 @@ function initializeEnemiesPool()
 			var new_bbox = new THREE.Box3();
 			new_bbox.setFromObject(new_box_helper);
 
-			new_enemy = new EnemyWrapper(new_enemy, new_bbox, new_box_helper, Date.now());
+			new_enemy = new EnemyWrapper(new_enemy, new_bbox, new_box_helper);
 			enemies_pool.add(new_enemy);
 			enemies_array[i] = new_enemy;
 		}
